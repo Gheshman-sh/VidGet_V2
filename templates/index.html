@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VidGet</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+      integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+      crossorigin="anonymous"
+    />
+  </head>
+  <body data-bs-theme="dark">
+    <header
+      class="navbar navbar-expand-lg bg-body-tertiary d-flex justify-content-center align-items-center bg-body-secondary border-bottom"
+    >
+      <h1 class="text-center">VidGet</h1>
+    </header>
+
+    <form action="/v" method="post" class="container my-4 d-flex gap-3">
+      <div class="input-group">
+        <input
+          type="text"
+          name="url"
+          class="form-control"
+          id="URL"
+          placeholder="Enter the video URL"
+        />
+        <button
+          type="button"
+          id="paste"
+          class="btn btn-outline-primary input-group-text"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            fill="currentColor"
+            class="bi bi-clipboard"
+            viewBox="0 0 16 16"
+          >
+            <path
+              d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z"
+            />
+            <path
+              d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z"
+            />
+          </svg>
+        </button>
+      </div>
+      <button
+        type="submit"
+        class="btn btn-primary d-flex align-items-center gap-2"
+      >
+        <span>submit</span>
+        <span
+          class="spinner-border spinner-border-sm d-none"
+          role="status"
+          id="vid-fetch"
+        >
+          <span class="visually-hidden">Loading...</span>
+        </span>
+      </button>
+    </form>
+
+    <div
+      class="container d-flex justify-content-center align-items-center gap-2 my-3 d-none"
+      id="video-info"
+      style="flex-direction: column"
+    >
+      <div class="card mb-3">
+        <img src="" class="card-img-top" alt="..." />
+        <div class="card-body">
+          <h5 class="card-title">Card title</h5>
+          <div class="mt-1 d-flex align-items-center gap-2">
+            <p class="border rounded p-2" id="views">Views: 10000</p>
+            <p class="border rounded p-2" id="likes">likes: 10000</p>
+            <p class="border rounded p-2" id="dislikes">dislikes: 10000</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="width: 18rem">
+        <div class="card-header">Download Options</div>
+        <ul class="list-group list-group-flush" id="download-options"></ul>
+      </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+      <div
+        id="toast"
+        class="toast"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+      >
+        <div class="toast-header">
+          <strong class="me-auto">Notification</strong>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="toast"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="toast-body" id="toast-body"></div>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="downloadModal"
+      tabindex="-1"
+      aria-labelledby="downloadModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="downloadModalLabel">Download Video</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <video
+              class="rounded border"
+              id="previewIframe"
+              src=""
+              width="100%"
+              height="auto"
+              controls
+              loop
+              allowfullscreen
+            ></video>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script
+      src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+      integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+      crossorigin="anonymous"
+    ></script>
+
+    <script>
+      const inputField = document.querySelector("#URL");
+      const pasteButton = document.querySelector("#paste");
+      const submitButton = document.querySelector("button[type='submit']");
+      const spinner = document.querySelector("#vid-fetch");
+      const cardTitle = document.querySelector(".card-title");
+      const viewsElement = document.querySelector("#views");
+      const likesElement = document.querySelector("#likes");
+      const dislikesElement = document.querySelector("#dislikes");
+      const thumbnailImage = document.querySelector(".card-img-top");
+      const downloadOptionsList = document.querySelector("#download-options");
+      const videoInfoContainer = document.querySelector("#video-info");
+      const toastEl = document.querySelector("#toast");
+      const toastBody = document.querySelector("#toast-body");
+      const toast = new bootstrap.Toast(toastEl);
+      const previewIframe = document.querySelector("#previewIframe");
+
+      const showToast = (message) => {
+        toastBody.textContent = message;
+        toast.show();
+      };
+
+      const convertBytesToMB = (bytes) => (bytes / (1024 * 1024)).toFixed(2);
+
+      const openDownloadModal = (url, title) => {
+        previewIframe.src = `/preview?video_url=${encodeURIComponent(
+          url
+        )}&filename=${encodeURIComponent(title)}-[VIDGET]`;
+        new bootstrap.Modal(document.getElementById("downloadModal")).show();
+      };
+
+      pasteButton.addEventListener("click", async () => {
+        try {
+          const permissionStatus = await navigator.permissions.query({
+            name: "clipboard-read",
+          });
+          if (["granted", "prompt"].includes(permissionStatus.state)) {
+            inputField.value = await navigator.clipboard.readText();
+            showToast("Text pasted successfully");
+          } else {
+            throw new Error(
+              "Clipboard permission denied. Please allow access to the clipboard."
+            );
+          }
+        } catch (e) {
+          console.error("Paste error:", e);
+          showToast(`Error: ${e.message}`);
+        }
+      });
+
+      submitButton.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const videoURL = inputField.value.trim();
+        if (!videoURL) return showToast("Please enter a video URL!");
+
+        try {
+          spinner.classList.remove("d-none");
+          videoInfoContainer.classList.add("d-none");
+
+          const response = await fetch("/v", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ url: videoURL }),
+          });
+
+          if (!response.ok)
+            throw new Error("Failed to fetch video information");
+
+          const data = await response.json();
+          spinner.classList.add("d-none");
+
+          thumbnailImage.src = data.thumbnail;
+          cardTitle.textContent = data.title;
+          viewsElement.textContent = `Views: ${data.view_count}`;
+          likesElement.textContent = `Likes: ${data.like_count}`;
+          dislikesElement.textContent = `Dislikes: ${data.dislike_count}`;
+          downloadOptionsList.innerHTML = "";
+
+          data.formats
+            .filter(
+              (format) => format.ext !== "m3u8" && !format.url.includes("m3u8")
+            )
+            .forEach((format) => {
+              const listItem = document.createElement("li");
+              listItem.classList.add(
+                "list-group-item",
+                "d-flex",
+                "justify-content-between",
+                "align-items-center"
+              );
+              listItem.textContent = `${
+                format.resolution || "Unknown resolution"
+              } - ${format.ext}${
+                format.filesize
+                  ? ` - ${convertBytesToMB(format.filesize)} MB`
+                  : ""
+              }`;
+
+              const downloadButton = document.createElement("button");
+              downloadButton.textContent = "Download";
+              downloadButton.classList.add("btn", "btn-outline-primary");
+              downloadButton.onclick = () => {
+                openDownloadModal(format.url, data.title);
+              };
+
+              listItem.appendChild(downloadButton);
+              downloadOptionsList.appendChild(listItem);
+            });
+
+          videoInfoContainer.classList.remove("d-none");
+          videoInfoContainer.classList.add("d-flex");
+        } catch (error) {
+          spinner.classList.add("d-none");
+          showToast(`Error: ${error.message}`);
+        }
+      });
+    </script>
+  </body>
+</html>
